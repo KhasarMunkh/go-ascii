@@ -1,8 +1,8 @@
 # Ignore test directory and markdown files
 *.log
-.md
-test/
-.txt 
+*.md
+test/  
+*.txt 
 headers/
-
+makefile
 

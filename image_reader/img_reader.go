@@ -29,6 +29,10 @@ func NewPixels(width, height int) *Pixels {
 	}
 }
 
+func (p *Pixels) At(x, y int) Pixel {
+	return p.Data[y*p.Width+x]
+}
+
 func DecodeImage(img image.Image) (*Pixels, error) {
 	rgb := normalizeToRGBA(img)
 	b := rgb.Bounds()
@@ -38,19 +42,20 @@ func DecodeImage(img image.Image) (*Pixels, error) {
 	p := NewPixels(w, h)
 
 	for y := b.Min.Y; y < b.Max.Y; y++ {
-		for x := b.Min.X; x < b.Min.X; x++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
 			pix := rgb.RGBAAt(x, y)
 			r := pix.R
-			g := pix.B
+			g := pix.G
 			b := pix.B
 			l := computeLuminance(r, g, b)
-			p.Data = append(p.Data, Pixel{
+
+			i := y*w + x
+			p.Data[i] = Pixel{
 				R: r,
 				G: g,
 				B: b,
 				Lum: l,
-			})
-
+			}
 		}
 	}
 	return p, nil

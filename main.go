@@ -1,19 +1,28 @@
 package main
 
 import (
-	"fmt"
+	"flag"
 	"image"
-	"image/color"
-	"image/draw"
 	_ "image/jpeg"
 	_ "image/png"
 	"log"
 	"os"
+
 	"github.com/KhasarMunkh/go-ascii/image_reader"
+	"github.com/KhasarMunkh/go-ascii/render"
+	"golang.org/x/image/draw"
+)
+
+const (
+	path = "assets/alex_no_background.png"
+	outputFile = "output.txt"
 )
 
 func main() {
-	f, err := os.Open("assets/zoro.jpeg")
+	width := flag.Int("width", 200, "Width of the output in characters")
+	flag.Parse()
+
+	f, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -24,75 +33,32 @@ func main() {
 		log.Fatal("Could not decode file", err)
 	}
 
-	pixels, err:= image_reader.DecodeImage(img)
+	// target height: keep aspect then adjust for half-block (≈1.0)
+	scale := float64(*width) / float64(img.Bounds().Dx())
+	tgtH := int(float64(img.Bounds().Dy()) * scale)
+	dst := image.NewRGBA(image.Rect(0, 0, *width, tgtH))
+	draw.CatmullRom.Scale(dst, dst.Bounds(), img, img.Bounds(), draw.Over, nil)
+
+	pixels, err := image_reader.DecodeImage(dst)
 	if err != nil {
 		log.Fatal("Could not decode image", err)
 	}
 
-
-}
-
-/*
-type Image interface {
-	toRGBA() *image.RGBA 
-	toGray() *image.Gray 
-}
-
-
-
-type Pixel struct {
-	lum  uint8
-}
-
-type Pixels []Pixel 
-
-func main() {
-	f, err := os.Open("assets/zoro.jpeg")
+	r := render.NewBrailleRenderer()
+	out, err := r.Render(pixels)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Could not render image", err)
 	}
-	defer f.Close()
+	os.Stdout.WriteString(out)
 
-	img, format, err := image.Decode(f)
+	// Write the output to a file
+	fout, err := os.Create(outputFile)
 	if err != nil {
-		log.Fatal("Could not decode file", err)
+		log.Fatal("Could not create output file", err)
 	}
-	fmt.Println("format: ", format)
-	p := Pixels{}
-	rgba := Normalize(img)
-	b := rgba.Bounds()
-	for y := 0; y < b.Max.Y; y++ {
-		for x := 0; x < b.Max.X; x++ {
-			p = append(p, Pixel{
-				lum: calculateLum(rgba.At(x, y)),
-			})
-		}
-	}
-	fmt.Println("Pixels length: ", len(p))
-	// Example of how to use the Pixels
-	for i, pixel := range p {
-		if i < 10 { // Print only the first 10 pixels
-			fmt.Printf("Pixel %d: Luminosity %d\n", i, pixel.lum)
-		}
+	defer fout.Close()
+	_, err = fout.WriteString(out)
+	if err != nil {
+		log.Fatal("Could not write to output file", err)
 	}
 }
-
-func calculateLum(c color.Color) uint8 {
-	r, g, b, _ := c.RGBA()
-	// Using the luminosity method to calculate perceived brightness
-	lum := uint8(0.2126*float64(r>>8) + 0.7152*float64(g>>8) + 0.0722*float64(b>>8))
-	return lum
-}
-
-
-func Normalize(img image.Image) *image.RGBA {
-	b := img.Bounds()
-	dst := image.NewRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
-	draw.Draw(dst, dst.Bounds(), img, b.Min, draw.Src)
-	return dst
-}
-
-func PrintAscii() {
-
-}
-*/
