@@ -25,7 +25,7 @@ const (
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: img2txt --mode ascii|ansi|braille --width <cols> [--out <file or ->] <image file or ->\n")
+	fmt.Fprintf(os.Stderr, "Usage: go-ascii --mode ascii|ansi|braille --width <cols> [--out <file or ->] <image file or ->\n")
 	os.Exit(2)
 }
 
